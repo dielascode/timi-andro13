@@ -1,0 +1,797 @@
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import 'detailModulSiswa.dart';
+import 'detailTugasSiswa.dart';
+import 'ambil_tugassiswaController.dart';
+import 'ambil_materisiswaController.dart';
+import 'ambil_namasiswaController.dart';
+import 'lihatTugasSebelumnya.dart';
+import 'main.dart';
+
+class MyHomeSiswaPage extends StatefulWidget {
+  @override
+  _MyHomePageState createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomeSiswaPage> {
+  int _selectedIndex = 0;
+  final TugasSiswa _tugasSiswa = Get.put(TugasSiswa());
+  final MateriSiswa _materiSiswa = Get.put(MateriSiswa());
+
+  @override
+  void initState() {
+    super.initState();
+    int idKelas = Get.arguments;
+    _tugasSiswa.setIdKelas(idKelas);
+    // _materiSiswa.setIdKelas(idKelas);
+  }
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  // Function to handle logout
+  Future<void> _logout(BuildContext context) async {
+    // Perform your logout logic here, like clearing user session, etc.
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+
+    // After logout, navigate to the ChoosePage
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (context) => ChoosePage()),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        iconTheme: IconThemeData(color: Colors.black),
+        automaticallyImplyLeading: false,
+        title: Image.asset(
+          '../assets/logoTimi.png', // Adjust the path to your logo asset
+          height: 40,
+        ),
+        actions: <Widget>[
+          IconButton(
+            icon: Icon(Icons.logout_sharp),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    title: Text("Logout"),
+                    content: Text("Apakah kamu yakin akan logout?"),
+                    actions: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                        child: Text("Close"),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          // Call the logout function
+                          _logout(context);
+                        },
+                        child: Text("Logout"),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+          ),
+        ],
+      ),
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: <Widget>[
+          HomePage(),
+          TugasPage(),
+          ModulPage(),
+          MePage(),
+        ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.school),
+            label: 'Tugas',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.folder),
+            label: 'Modul',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.account_circle),
+            label: 'Me',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.grey,
+        backgroundColor: Colors.white,
+        onTap: _onItemTapped,
+        type: BottomNavigationBarType.fixed,
+      ),
+    );
+  }
+}
+
+class HomePage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Color(0xFFDDEBEB),
+      child: ListView(
+        padding: EdgeInsets.all(16.0),
+        children: [
+          _buildHeader(),
+          SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildShortcutCard(
+                context,
+                icon: Icons.assignment,
+                label: 'Pintasan Tugas Anda',
+                onTap: () {
+                  // Handle shortcut action
+                },
+              ),
+              _buildShortcutCard(
+                context,
+                icon: Icons.edit,
+                label: 'Pintasan Tugas Anda',
+                onTap: () {
+                  // Handle shortcut action
+                },
+              ),
+            ],
+          ),
+          SizedBox(height: 20),
+          _buildLatestTasksSection(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12.0),
+      ),
+      padding: EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Halo',
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Text(
+            'Fathir Al Attar',
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: 10),
+          Text(
+            '31/05/2024 08:39 am',
+            style: TextStyle(
+              color: Colors.black54,
+              fontSize: 16,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShortcutCard(
+      BuildContext context, {
+        required IconData icon,
+        required String label,
+        required VoidCallback onTap,
+      }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          height: 100,
+          margin: EdgeInsets.symmetric(horizontal: 8.0),
+          decoration: BoxDecoration(
+            color: Color(0xFFFFA726),
+            borderRadius: BorderRadius.circular(12.0),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 40, color: Colors.white),
+              SizedBox(height: 10),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLatestTasksSection() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12.0),
+      ),
+      padding: EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Tugas Terbaru',
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: 10),
+          Container(
+            height: 200,
+            color: Color(0xFF00BCD4),
+            child: Center(
+              child: Text(
+                'Daftar Tugas Terbaru',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+class TugasPage extends StatelessWidget {
+  final TugasSiswa _tugasSiswa = Get.find();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('DATA TUGAS'),
+        automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.history),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => LihatTugasSebelumnyaPage()),
+              );
+            },
+          ),
+        ],
+      ),
+      body: Container(
+        color: Color(0xFFDDEBEB),
+        child: Obx(() {
+          if (_tugasSiswa.tugasList.isEmpty) {
+            return Center(
+              child: Text('Tidak Ada Tugas'),
+            );
+          }
+
+          return ListView.builder(
+            itemCount: _tugasSiswa.tugasList.length,
+            itemBuilder: (context, index) {
+              var tugas = _tugasSiswa.tugasList[index];
+              return Padding(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                child: _buildClassContainer(
+                  context,
+                  tugas['id'],
+                  tugas['id_kelas'],
+                  tugas['id_mapel'],
+                  tugas['id_guru'],
+                  tugas['tugas'],
+                  tugas['tanggal'],
+                  tugas['tenggat'],
+                  tugas['mapel']['nama_mapel'],
+                  tugas['guru']['nama'],
+                  _tugasSiswa.idSiswa.value,
+                ),
+              );
+            },
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildClassContainer(
+    BuildContext context,
+    int id,
+    int idKelas,
+    int idMapel,
+    int idGuru,
+    String tugas,
+    String tanggal,
+    String tenggat,
+    String namaMapel,
+    String namaGuru,
+    int idSiswa,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Color.fromARGB(255, 205, 211, 216),
+        borderRadius: BorderRadius.circular(12.0),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: EdgeInsets.all(10.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Guru: $namaGuru",
+                  style: TextStyle(
+                    color: const Color.fromARGB(255, 0, 0, 0),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                Text(
+                  "Mapel: $namaMapel",
+                  style: TextStyle(
+                    color: const Color.fromARGB(255, 0, 0, 0),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                Text(
+                  "Tugas: $tugas",
+                  style: TextStyle(
+                    color: const Color.fromARGB(255, 0, 0, 0),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                Row(
+                  children: [
+                    Text(
+                      "Tanggal: $tanggal",
+                      style: TextStyle(
+                        color: const Color.fromARGB(255, 0, 0, 0),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                    SizedBox(width: 10),
+                    Text(
+                      "Tenggat: $tenggat",
+                      style: TextStyle(
+                        color: const Color.fromARGB(255, 0, 0, 0),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Padding(
+                padding: EdgeInsets.only(right: 10, bottom: 10),
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => PengumpulanPage(
+                          id: id,
+                          idKelas: idKelas,
+                          idMapel: idMapel,
+                          idGuru: idGuru,
+                          tugas: tugas,
+                          idSiswa: idSiswa,
+                        ),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Colors.black,
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    backgroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.0),
+                    ),
+                  ),
+                  child: Text(
+                    'Kumpulkan',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ModulPage extends StatelessWidget {
+  final MateriSiswa _materiSiswa = Get.find();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Color(0xFFDDEBEB),
+      child: Obx(() {
+        if (_materiSiswa.materiList.isEmpty) {
+          return Center(child: CircularProgressIndicator());
+        }
+        return ListView.builder(
+          itemCount: _materiSiswa.materiList.length,
+          itemBuilder: (context, index) {
+            var materi = _materiSiswa.materiList[index];
+            return Padding(
+              padding:
+                  const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+              child: _buildModulContainer(
+                context,
+                materi['materi'],
+                materi['mapel']['nama_mapel'],
+                materi['guru']['nama'],
+                // materi['materi'],  // assuming this is the URL
+              ),
+            );
+          },
+        );
+      }),
+    );
+  }
+
+  Widget _buildModulContainer(
+    BuildContext context,
+    String materi,
+    String namaMapel,
+    String namaGuru,
+    // String materi,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.blue,
+        borderRadius: BorderRadius.circular(12.0),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(10.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Guru: $namaGuru",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            Text(
+              "Mapel: $namaMapel",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            Text(
+              "Materi: $materi",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final Uri uri = Uri.parse(materi);
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Could not launch $materi')),
+                  );
+                }
+              },
+              child: Text(
+                "Lihat Materi",
+                style: TextStyle(
+                  color: Colors.blue,
+                  decoration: TextDecoration.underline,
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class MePage extends StatelessWidget {
+  final NamaSiswa _NamaSiswa = Get.put(NamaSiswa());
+  final TextEditingController namaController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController nisnController = TextEditingController();
+  final TextEditingController alamatController = TextEditingController();
+  final TextEditingController nomorTeleponController = TextEditingController();
+  final TextEditingController namaKelasController = TextEditingController();
+  final TextEditingController absenController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    // Panggil fetchData saat halaman diinisialisasi
+    _NamaSiswa.fetchData();
+
+    return Scaffold(
+      body: Center(
+        child: Obx(() {
+          if (_NamaSiswa.dataList.isEmpty) {
+            return CircularProgressIndicator();
+          } else {
+            var data = _NamaSiswa.dataList.first;
+
+            // Mengisi controller dengan data awal
+            namaController.text = data['nama'];
+            // kodeMengajarController.text = data['kode'].toString();
+            emailController.text = data['email'];
+            nisnController.text = data['nisn'].toString();
+            alamatController.text = data['alamat'];
+            nomorTeleponController.text = data['notlp'].toString();
+            namaKelasController.text = data['id_kelas'].toString();
+            absenController.text = data['absen'].toString();
+            passwordController.text = data['password'].toString();
+
+            // return Padding(
+            return SingleChildScrollView(
+              padding: EdgeInsets.all(16.0),
+              child: Container(
+                width: MediaQuery.of(context).size.width *
+                    0.8, // Adjust the width of the card
+                child: Card(
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                  ),
+                  child: Padding(
+                    padding:
+                        EdgeInsets.symmetric(vertical: 16.0, horizontal: 8.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Data Akun Siswa',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(height: 15),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            'Nama',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text(data['nama']),
+                        ),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            'Email',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text(data['email']),
+                        ),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            'Nisn',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text(data['nisn'].toString()),
+                        ),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            'Alamat',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text(data['alamat']),
+                        ),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            'Nomor Telepon',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text(data['notlp'].toString()),
+                        ),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            'Kelas',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text(data['kelas']['nama_kelas']),
+                        ),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            'Absen',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text(data['absen'].toString()),
+                        ),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            'Password Akun',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text(data['password'].toString()),
+                        ),
+                        SizedBox(height: 20),
+                        Center(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              // Tampilkan dialog untuk mengedit data
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: Text('Edit Data Akun Siswa'),
+                                  content: SingleChildScrollView(
+                                    child: Column(
+                                      children: [
+                                        TextField(
+                                          controller: namaController,
+                                          decoration: InputDecoration(
+                                              labelText: 'Nama'),
+                                          enabled: false,
+                                        ),
+                                        TextField(
+                                          controller: emailController,
+                                          decoration: InputDecoration(
+                                              labelText: 'Email'),
+                                        ),
+                                        TextField(
+                                          controller: nisnController,
+                                          decoration: InputDecoration(
+                                              labelText: 'Nisn'),
+                                          enabled: false,
+                                        ),
+                                        TextField(
+                                          controller: alamatController,
+                                          decoration: InputDecoration(
+                                              labelText: 'Alamat'),
+                                        ),
+                                        TextField(
+                                          controller: nomorTeleponController,
+                                          decoration: InputDecoration(
+                                              labelText: 'Nomor Telepon'),
+                                          keyboardType: TextInputType.phone,
+                                        ),
+                                        TextField(
+                                          controller: namaKelasController,
+                                          decoration: InputDecoration(
+                                              labelText: 'Kelas'),
+                                          enabled: false,
+                                        ),
+                                        TextField(
+                                          controller: absenController,
+                                          decoration: InputDecoration(
+                                              labelText: 'Absen'),
+                                          enabled: false,
+                                        ),
+                                        TextField(
+                                          controller: passwordController,
+                                          decoration: InputDecoration(
+                                              labelText: 'Password'),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  actions: [
+                                    ElevatedButton(
+                                      onPressed: () async {
+                                        await _NamaSiswa.editData(
+                                          // Pastikan idSiswa terdefinisi
+                                          nama: namaController.text,
+                                          email: emailController.text,
+                                          nisn: nisnController.text,
+                                          alamat: alamatController.text,
+                                          nomorTelepon:
+                                              nomorTeleponController.text,
+                                          kelas: namaKelasController.text,
+                                          absen: absenController.text,
+                                          password: passwordController.text,
+                                        );
+
+                                        // Tutup dialog
+                                        Navigator.of(context).pop();
+                                      },
+                                      child: Text('Simpan'),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () {
+                                        Navigator.of(context).pop();
+                                      },
+                                      child: Text('Batal'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.grey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                            child: Text('Edit'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.orange, // Warna tombol
+                            ),
+                          ),
+                        )
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }
+        }),
+      ),
+    );
+  }
+}

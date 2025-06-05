@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "606370136891",
+    "project_id": "timi-534dd",
+    "storage_bucket": "timi-534dd.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:606370136891:android:bc25002905bbf267d12d1e",
+        "android_client_info": {
+          "package_name": "com.TIMI.timiprjct"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAwmWdBQx-x9G_N3RgoMOAizgH4RhA665M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

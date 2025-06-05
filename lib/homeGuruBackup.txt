@@ -1,0 +1,661 @@
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'detailTugasGuru.dart';
+import 'materiGuru.dart';
+import 'package:get/get.dart';
+import 'ambil_kelasguruController.dart';
+import 'ambil_namaguruController.dart';
+import 'main.dart';
+import 'package:intl/intl.dart';
+
+class MyHomeGuruPage extends StatefulWidget {
+  @override
+  _MyHomePageState createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomeGuruPage> {
+  int _selectedIndex = 0;
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  Future<void> _logout(BuildContext context) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (context) => ChoosePage()),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      drawer: Drawer(),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: IconThemeData(color: Colors.black),
+        automaticallyImplyLeading: false,
+        title: Row(
+          children: [
+            Image.asset(
+              '../assets/logoTimi.png',
+              height: 40,
+            ),
+            SizedBox(width: 8),
+            Text(
+              '',
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        actions: <Widget>[
+          IconButton(
+            icon: Icon(Icons.logout_sharp),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    title: Text("Logout"),
+                    content: Text("Apakah kamu yakin akan logout?"),
+                    actions: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                        child: Text("Close"),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          _logout(context);
+                        },
+                        child: Text("Logout"),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+          ),
+        ],
+      ),
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: <Widget>[
+          HomePage(),
+          ClassPage(),
+          MePage(),
+        ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.school),
+            label: 'Kelas',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.account_circle),
+            label: 'Me',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.grey,
+        onTap: _onItemTapped,
+      ),
+    );
+  }
+}
+
+class HomePage extends StatelessWidget {
+  final KelasGuru _KelasGuru = Get.put(KelasGuru());
+
+  @override
+  Widget build(BuildContext context) {
+    _KelasGuru.fetchData();
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          Container(
+            color: Color(0xFFFFF8E1),
+            padding: EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+            child: Column(
+              children: [
+                CircleAvatar(
+                  radius: 50,
+                  backgroundColor: Colors.black,
+                  child: Icon(Icons.person, size: 50, color: Colors.white),
+                ),
+                SizedBox(height: 10),
+                Text(
+                  'Selamat Datang Nama Guru',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  '${_formatDate(DateTime.now())}\n${_formatTime(DateTime.now())}',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.black, // Mengatur warna teks menjadi hitam
+                    fontSize: 14,
+                  ),
+                ),
+                SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildInfoCard('Jumlah Materi diberi', '15'),
+                    _buildInfoCard('Jumlah Tugas diberi', '10'),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: 20),
+          SlideshowWidget(
+            slides: _KelasGuru.dataList
+                .map((item) => item['class_name'] as String)
+                .toList(),
+          ),
+          SizedBox(height: 20),
+          _buildProgressSection(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoCard(String title, String value) {
+    return Card(
+      color: Color(0xFFF9EBC8),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+            SizedBox(height: 10),
+            Text(
+              value,
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProgressSection() {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 16.0),
+      padding: EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: Color(0xFF4CAF50),
+        borderRadius: BorderRadius.circular(12.0),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Grafik',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+          ),
+          SizedBox(height: 10),
+          Container(
+            height: 200,
+            decoration: BoxDecoration(
+              color: Colors.blue,
+              borderRadius: BorderRadius.circular(12.0),
+            ),
+            child: Center(
+              child: Text(
+                'Grafik dengan rentang bulan Juli - Juni',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime dateTime) {
+    return DateFormat('dd/MM/yyyy').format(dateTime);
+  }
+
+  String _formatTime(DateTime dateTime) {
+    return DateFormat('hh:mm a').format(dateTime);
+  }
+}
+
+class SlideshowWidget extends StatefulWidget {
+  final List<String> slides;
+
+  const SlideshowWidget({
+    Key? key,
+    required this.slides,
+  }) : super(key: key);
+
+  @override
+  _SlideshowWidgetState createState() => _SlideshowWidgetState();
+}
+
+class _SlideshowWidgetState extends State<SlideshowWidget> {
+  late PageController _pageController;
+  int _currentPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(
+      viewportFraction: 0.85,
+      initialPage: 1000,
+    );
+    _pageController.addListener(_pageListener);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _pageListener() {
+    setState(() {
+      _currentPage = _pageController.page!.round() % widget.slides.length;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 150,
+      child: PageView.builder(
+        controller: _pageController,
+        itemBuilder: (context, index) {
+          return _buildSlide(index % widget.slides.length);
+        },
+      ),
+    );
+  }
+
+  Widget _buildSlide(int index) {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 10.0),
+      decoration: BoxDecoration(
+        color: Colors.blue,
+        borderRadius: BorderRadius.circular(12.0),
+      ),
+      child: Align(
+        alignment: Alignment.topLeft,
+        child: Padding(
+          padding: EdgeInsets.all(10.0),
+          child: Text(
+            widget.slides[index],
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class ClassPage extends StatelessWidget {
+  final KelasGuru _kelasGuru = Get.put(KelasGuru());
+
+  @override
+  Widget build(BuildContext context) {
+    _kelasGuru.fetchData();
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Kelas Anda'),
+        backgroundColor: Colors.orange,
+        automaticallyImplyLeading: false, // Menghilangkan tombol kembali
+      ),
+      body: Obx(() {
+        if (_kelasGuru.dataList.isEmpty) {
+          return Center(child: CircularProgressIndicator());
+        } else {
+          return GridView.builder(
+            physics: BouncingScrollPhysics(),
+            padding: EdgeInsets.all(10.0),
+            itemCount: _kelasGuru.dataList.length,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 10.0,
+              mainAxisSpacing: 10.0,
+              childAspectRatio: 1.5,
+            ),
+            itemBuilder: (context, index) {
+              var data = _kelasGuru.dataList[index];
+              return _buildClassContainer(context, data);
+            },
+          );
+        }
+      }),
+    );
+  }
+
+  Widget _buildClassContainer(BuildContext context, Map<String, dynamic> data) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.orange[100], // Mengganti warna menjadi soft orange
+        borderRadius: BorderRadius.circular(12.0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.5),
+            spreadRadius: 2,
+            blurRadius: 5,
+            offset: Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(10.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              data['class_name'],
+              style: TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+              ),
+            ),
+            Spacer(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => DetailTugasGuru(
+                          idKelas: data['id_kelas'],
+                        ),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Colors.black,
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    backgroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.0),
+                    ),
+                  ),
+                  child: Text(
+                    'Tugas',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            MateriGuru(idKelas: data['id_kelas']),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Colors.black,
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    backgroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.0),
+                    ),
+                  ),
+                  child: Text(
+                    'Materi',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class MePage extends StatelessWidget {
+  final NamaGuru _namaGuru = Get.put(NamaGuru());
+  final TextEditingController namaController = TextEditingController();
+  final TextEditingController kodeMengajarController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController nomorTeleponController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    _namaGuru.fetchData();
+
+    return Scaffold(
+      drawer: Drawer(),
+      appBar: AppBar(
+        title: Text('Profil Anda'),
+        backgroundColor: Colors.orange,
+        automaticallyImplyLeading: false, // Menghilangkan tombol kembali
+      ), // Tambahkan drawer Anda di sini jika diperlukan
+      body: Center(
+        child: Obx(() {
+          if (_namaGuru.dataList.isEmpty) {
+            return CircularProgressIndicator();
+          } else {
+            var data = _namaGuru.dataList.first;
+
+            // Isi controller dengan data awal
+            namaController.text = data['nama'];
+            kodeMengajarController.text = data['kode'].toString();
+            emailController.text = data['email'];
+            nomorTeleponController.text = data['notlp'].toString();
+
+            return SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Container(
+                  width: MediaQuery.of(context).size.width * 0.9,
+                  child: Card(
+                    color: Color.fromARGB(
+                        255, 255, 233, 191), // Ubah warna latar belakang card
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          CircleAvatar(
+                            radius: 50,
+                            backgroundColor: Colors.black,
+                            child: Icon(Icons.person,
+                                size: 50, color: Colors.white),
+                          ),
+                          SizedBox(height: 10),
+                          Text(
+                            '${data['nama']}\n${data['email']}',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 20),
+                          ListTile(
+                            title: Text(
+                              'Kode Mengajar',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            subtitle: Text(data['kode'].toString()),
+                          ),
+                          ListTile(
+                            title: Text(
+                              'Nomor Telepon',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            subtitle: Text(data['notlp'].toString()),
+                          ),
+                          SizedBox(height: 20),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              ElevatedButton(
+                                onPressed: () {
+                                  // Tampilkan dialog untuk mengedit data
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: Text('Edit Data Akun Guru'),
+                                      content: SingleChildScrollView(
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            TextField(
+                                              controller: namaController,
+                                              decoration: InputDecoration(
+                                                labelText: 'Nama',
+                                              ),
+                                            ),
+                                            SizedBox(height: 10),
+                                            TextField(
+                                              controller:
+                                                  kodeMengajarController,
+                                              decoration: InputDecoration(
+                                                labelText: 'Kode Mengajar',
+                                              ),
+                                              keyboardType:
+                                                  TextInputType.number,
+                                            ),
+                                            SizedBox(height: 10),
+                                            TextField(
+                                              controller: emailController,
+                                              decoration: InputDecoration(
+                                                labelText: 'Email',
+                                              ),
+                                            ),
+                                            SizedBox(height: 10),
+                                            TextField(
+                                              controller:
+                                                  nomorTeleponController,
+                                              decoration: InputDecoration(
+                                                labelText: 'Nomor Telepon',
+                                              ),
+                                              keyboardType: TextInputType.phone,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      actions: [
+                                        ElevatedButton(
+                                          onPressed: () async {
+                                            await _namaGuru.editData(
+                                              nama: namaController.text,
+                                              kodeMengajar:
+                                                  kodeMengajarController.text,
+                                              email: emailController.text,
+                                              nomorTelepon:
+                                                  nomorTeleponController.text,
+                                            );
+
+                                            Navigator.of(context).pop();
+                                          },
+                                          child: Text('Simpan'),
+                                        ),
+                                        ElevatedButton(
+                                          onPressed: () {
+                                            Navigator.of(context).pop();
+                                          },
+                                          child: Text('Batal'),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.grey,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                                child: Text('Edit Profil'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor:
+                                      Color.fromARGB(255, 255, 255, 255),
+                                  padding: EdgeInsets.symmetric(vertical: 12),
+                                ),
+                              ),
+                              SizedBox(height: 10),
+                              ElevatedButton(
+                                onPressed: () {
+                                  _logout(context);
+                                },
+                                child: Text('Logout/Keluar'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Color.fromARGB(
+                                      255, 255, 255, 255), // Ubah warna tombol
+                                  padding: EdgeInsets.symmetric(vertical: 12),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }
+        }),
+      ),
+    );
+  }
+
+  Future<void> _logout(BuildContext context) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (context) => ChoosePage()),
+    );
+  }
+}

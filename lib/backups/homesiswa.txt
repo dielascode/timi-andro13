@@ -1,0 +1,502 @@
+import 'package:flutter/material.dart';
+import 'detailModulSiswa.dart';
+import 'detailTugasSiswa.dart';
+import 'ambil_tugassiswaController.dart';
+import 'ambil_materisiswaController.dart';
+import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+class MyHomeSiswaPage extends StatefulWidget {
+  @override
+  _MyHomePageState createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomeSiswaPage> {
+  int _selectedIndex = 0;
+  final TugasSiswa _tugasSiswa = Get.put(TugasSiswa());
+  final MateriSiswa _materiSiswa = Get.put(MateriSiswa());
+
+  @override
+  void initState() {
+    super.initState();
+    int idKelas = Get.arguments;
+    _tugasSiswa.setIdKelas(idKelas);
+    // _materiSiswa.setIdKelas(idKelas);
+  }
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        iconTheme: IconThemeData(color: Colors.black),
+        title: Image.asset(
+          '../assets/logoTimi.png',
+          height: 64,
+        ),
+        actions: <Widget>[
+          IconButton(
+            icon: Icon(Icons.notifications),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    title: Text("Notifications"),
+                    content: Text("This is a notification."),
+                    actions: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                        child: Text("Close"),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+          ),
+        ],
+      ),
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: <Widget>[
+          HomePage(),
+          TugasPage(),
+          ModulPage(),
+          MePage(),
+        ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.school),
+            label: 'Tugas',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.folder),
+            label: 'Modul',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.account_circle),
+            label: 'Me',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.grey,
+        backgroundColor: Colors.white,
+        onTap: _onItemTapped,
+        type: BottomNavigationBarType.fixed,
+      ),
+    );
+  }
+}
+
+class HomePage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Color(0xFFDDEBEB),
+      child: ListView(
+        padding: EdgeInsets.all(16.0),
+        children: [
+          SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: _buildTaskSection(
+                    context, 'Tugas yang Belum Dikerjakan', '0'),
+              ),
+              SizedBox(width: 20),
+              Expanded(
+                child: _buildTaskSection(
+                    context, 'Tugas yang Sudah Dikerjakan', '0'),
+              ),
+            ],
+          ),
+          SizedBox(height: 20),
+          _buildTaskSection(context, 'Tugas yang Tidak Dikerjakan', '0'),
+          SizedBox(height: 20),
+          _buildProgressSection(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTaskSection(BuildContext context, String title, String count) {
+    return Container(
+      height: 120,
+      margin: EdgeInsets.symmetric(horizontal: 10.0),
+      decoration: BoxDecoration(
+        color: Colors.blue,
+        borderRadius: BorderRadius.circular(12.0),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(10.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Text(
+                title,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+            ),
+            SizedBox(height: 10),
+            Center(
+              child: Text(
+                count,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProgressSection() {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 10.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Banyak tugas tiap bulan',
+            style: TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 10),
+          Container(
+            height: 200,
+            decoration: BoxDecoration(
+              color: Colors.blue,
+              borderRadius: BorderRadius.circular(12.0),
+            ),
+            child: Center(
+              child: Text(
+                'Grafik dengan rentang bulan Juli - Juni',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class TugasPage extends StatelessWidget {
+  final TugasSiswa _tugasSiswa = Get.find();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Color(0xFFDDEBEB),
+      child: Obx(() {
+        if (_tugasSiswa.tugasList.isEmpty) {
+          return Center(child: Text('No tasks available'));
+        }
+        return ListView.builder(
+          itemCount: _tugasSiswa.tugasList.length,
+          itemBuilder: (context, index) {
+            var tugas = _tugasSiswa.tugasList[index];
+            return Padding(
+              padding: const EdgeInsets.symmetric(
+                  vertical: 8.0, horizontal: 16.0),
+              child: _buildClassContainer(
+                context,
+                tugas['id'],
+                tugas['id_kelas'],
+                tugas['id_mapel'],
+                tugas['id_guru'],
+                tugas['tugas'],
+                tugas['tanggal'],
+                tugas['tenggat'],
+                tugas['mapel']['nama_mapel'],
+                tugas['guru']['nama'],
+                _tugasSiswa.idSiswa.value,
+              ),
+            );
+          },
+        );
+      }),
+    );
+  }
+
+  Widget _buildClassContainer(
+    BuildContext context,
+    int id,
+    int idKelas,
+    int idMapel,
+    int idGuru,
+    String tugas,
+    String tanggal,
+    String tenggat,
+    String namaMapel,
+    String namaGuru,
+    int idSiswa,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Color.fromARGB(255, 205, 211, 216),
+        borderRadius: BorderRadius.circular(12.0),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: EdgeInsets.all(10.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Guru: $namaGuru",
+                  style: TextStyle(
+                    color: const Color.fromARGB(255, 0, 0, 0),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                Text(
+                  "Mapel: $namaMapel",
+                  style: TextStyle(
+                    color: const Color.fromARGB(255, 0, 0, 0),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                Text(
+                  "Tugas: $tugas",
+                  style: TextStyle(
+                    color: const Color.fromARGB(255, 0, 0, 0),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                Row(
+                  children: [
+                    Text(
+                      "Tanggal: $tanggal",
+                      style: TextStyle(
+                        color: const Color.fromARGB(255, 0, 0, 0),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                    SizedBox(width: 10),
+                    Text(
+                      "Tenggat: $tenggat",
+                      style: TextStyle(
+                        color: const Color.fromARGB(255, 0, 0, 0),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Padding(
+                padding: EdgeInsets.only(right: 10, bottom: 10),
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => PengumpulanPage(
+                          id: id,
+                          idKelas: idKelas,
+                          idMapel: idMapel,
+                          idGuru: idGuru,
+                          tugas: tugas,
+                          idSiswa: idSiswa,
+                        ),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Colors.black,
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    backgroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.0),
+                    ),
+                  ),
+                  child: Text(
+                    'Kumpulkan',
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ModulPage extends StatelessWidget {
+  final MateriSiswa _materiSiswa = Get.find();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Color(0xFFDDEBEB),
+      child: Obx(() {
+        if (_materiSiswa.materiList.isEmpty) {
+          return Center(child: Text('No materials available'));
+        }
+        return ListView.builder(
+          itemCount: _materiSiswa.materiList.length,
+          itemBuilder: (context, index) {
+            var materi = _materiSiswa.materiList[index];
+            return Padding(
+              padding: const EdgeInsets.symmetric(
+                  vertical: 8.0, horizontal: 16.0),
+              child: _buildModulContainer(
+                context,
+                materi['materi'],
+                materi['mapel']['nama_mapel'],
+                materi['guru']['nama'],
+                // materi['materi'],  // assuming this is the URL
+              ),
+            );
+          },
+        );
+      }),
+    );
+  }
+
+  Widget _buildModulContainer(
+    BuildContext context,
+    String materi,
+    String namaMapel,
+    String namaGuru,
+    // String materi,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.blue,
+        borderRadius: BorderRadius.circular(12.0),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(10.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Guru: $namaGuru",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            Text(
+              "Mapel: $namaMapel",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            Text(
+              "Materi: $materi",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            ElevatedButton(
+  onPressed: () async {
+    final Uri uri = Uri.parse(materi);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not launch $materi')),
+      );
+    }
+  },
+  child: Text(
+    "Lihat Materi",
+    style: TextStyle(
+      color: Colors.blue,
+      decoration: TextDecoration.underline,
+    ),
+    overflow: TextOverflow.ellipsis,
+    maxLines: 1,
+  ),
+)
+],
+        ),
+      ),
+    );
+  }
+}
+
+class MePage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Color(0xFFDDEBEB),
+      child: ListView(
+        children: [
+          SizedBox(height: 20),
+          ListTile(
+            leading: Icon(Icons.person),
+            title: Text('Profile'),
+            trailing: Icon(Icons.arrow_forward_ios),
+            onTap: () {
+              // Handle profile tap
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.settings),
+            title: Text('Settings'),
+            trailing: Icon(Icons.arrow_forward_ios),
+            onTap: () {
+              // Handle settings tap
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
